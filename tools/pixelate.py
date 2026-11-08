@@ -17,7 +17,7 @@ from collections import deque
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -78,7 +78,11 @@ def quantize(img: Image.Image, colors: int) -> Image.Image:
     a = np.array(img)
     opaque = a[..., 3] >= 128
     rgb = Image.fromarray(a[..., :3])
-    q = rgb.quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).convert('RGB')
+    # paleta calculada solo con los píxeles visibles
+    pix = a[..., :3][opaque].reshape(1, -1, 3)
+    pal_src = Image.fromarray(pix if pix.size else a[..., :3].reshape(1, -1, 3))
+    pal = pal_src.quantize(colors=colors, method=Image.Quantize.MEDIANCUT, kmeans=3)
+    q = rgb.quantize(palette=pal, dither=Image.Dither.NONE).convert('RGB')
     out = np.dstack([np.array(q), np.where(opaque, 255, 0).astype(np.uint8)])
     return Image.fromarray(out, 'RGBA')
 
@@ -98,23 +102,31 @@ def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('input')
     p.add_argument('name', help='nombre del sprite, p. ej. dragon, espada, pocion_l')
-    p.add_argument('--size', type=int, default=32, help='lado del sprite en píxeles (32 por defecto)')
-    p.add_argument('--colors', type=int, default=16, help='colores de la paleta (16 por defecto)')
+    p.add_argument('--size', type=int, default=64, help='lado del sprite en píxeles (64 por defecto)')
+    p.add_argument('--colors', type=int, default=32, help='colores de la paleta (32 por defecto)')
     p.add_argument('--tol', type=int, default=40, help='tolerancia para quitar el fondo (0-255)')
     p.add_argument('--saturation', type=float, default=1.25, help='realce de saturación antes de reducir')
     p.add_argument('--contrast', type=float, default=1.15, help='realce de contraste antes de reducir')
+    p.add_argument('--sharpen', type=float, default=0.8, help='enfoque tras reducir (0 = nada)')
     p.add_argument('--no-outline', action='store_true')
     args = p.parse_args()
 
     img = Image.open(args.input)
     img = remove_background(img, args.tol)
+    # comer 2 px del borde para quitar el halo claro del fondo
+    img.putalpha(img.getchannel('A').filter(ImageFilter.MinFilter(5)))
     img = crop_square(img, 0.08)
     rgb, alpha = img.convert('RGB'), img.getchannel('A')
     rgb = ImageEnhance.Color(rgb).enhance(args.saturation)
     rgb = ImageEnhance.Contrast(rgb).enhance(args.contrast)
     img = Image.merge('RGBA', (*rgb.split(), alpha))
     inner = args.size if args.no_outline else args.size - 2
-    small = quantize(downscale(img, inner), args.colors)
+    small = downscale(img, inner)
+    if args.sharpen > 0:
+        r, g, b, al = small.split()
+        rgb_s = Image.merge('RGB', (r, g, b)).filter(ImageFilter.UnsharpMask(radius=1, percent=int(args.sharpen * 100), threshold=2))
+        small = Image.merge('RGBA', (*rgb_s.split(), al))
+    small = quantize(small, args.colors)
     if not args.no_outline:
         canvas = Image.new('RGBA', (args.size, args.size), (0, 0, 0, 0))
         canvas.paste(small, (1, 1))

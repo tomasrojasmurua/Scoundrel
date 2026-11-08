@@ -20,8 +20,8 @@ Roguelike de cartas en pixel art para jugar en el navegador. Bajas a una cripta 
 
    ```bash
    pip install pillow numpy
-   python3 tools/pixelate.py mi_dragon.png dragon            # 32x32, 16 colores
-   python3 tools/pixelate.py mi_dragon.png dragon --size 48 --colors 24
+   python3 tools/pixelate.py mi_dragon.png dragon            # 64x64, 32 colores
+   python3 tools/pixelate.py mi_dragon.png dragon --size 96 --colors 48
    ```
 
    El script quita el fondo, recorta, reduce a pocos píxeles, limita la paleta y añade un contorno oscuro. Guarda el sprite en `assets/sprites/<nombre>.png` y una vista previa ampliada en `assets/originals/`.

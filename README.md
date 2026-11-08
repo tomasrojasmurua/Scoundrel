@@ -7,11 +7,11 @@ Roguelike de cartas en pixel art para jugar en el navegador. Bajas a una cripta 
 ## Reglas
 
 - **♠ ♣ Monstruos** (2 a As = 14): hacen tanto daño como su valor.
-- **♦ Armas** (2–10): restan su valor al daño. Cada arma aguanta 3 combates y se rompe.
+- **♦ Armas** (2–10): restan su valor al daño. Tras usarla contra una criatura, solo sirve contra criaturas más débiles que esa.
 - **♥ Pociones** (2–10): curan su valor. Una cura por sala; puedes guardar una en el cinturón.
-- **♥ ♦ Reliquias** (J, Q, K, A rojas): pluma de fénix, cáliz de vida, piedra de afilar, antorcha eterna.
+- **♥ ♦ Reliquias** (J, Q, K, A rojas): pluma de fénix (te revive), cáliz de vida (+4 vida máxima), piedra de afilar (+1 al arma y la renueva), antorcha eterna (permite huir dos salas seguidas una vez).
 - Cada sala muestra 4 cartas: resuelves 3 y la cuarta pasa a la siguiente.
-- Antes de tocar una carta puedes huir gastando una antorcha (empiezas con 3).
+- Antes de tocar una carta puedes huir, pero no de dos salas seguidas.
 
 ## Arte: de imagen realista a pixel art
 

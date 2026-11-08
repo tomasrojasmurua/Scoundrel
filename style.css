@@ -108,3 +108,4 @@ dialog ul { padding-left: 20px; margin: 6px 0; } dialog li { margin-bottom: 4px;
   #slot-relic { grid-column: span 2; min-height: 0; }
   .slot-body img { width: 40px; height: 40px; }
 }
+[hidden] { display: none !important; }

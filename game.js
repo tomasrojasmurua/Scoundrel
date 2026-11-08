@@ -1,12 +1,12 @@
 'use strict';
 // ───── Naipe Maldito ─────
-const MAX_HP = 20, START_TORCHES = 3, WEAPON_USES = 3, ROOM_SIZE = 4;
+const MAX_HP = 20, ROOM_SIZE = 4;
 const RANK = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' };
 const SUIT_TYPE = { '♠': 'monster', '♣': 'monster', '♦': 'weapon', '♥': 'potion' };
 
 const $ = (s) => document.querySelector(s);
 const rankLabel = (r) => RANK[r] || String(r);
-const sprite = (c) => `assets/sprites/${SPRITES[c.type][c.rank]}.png`;
+const sprite = (c) => { const id = SPRITES[c.type][c.rank]; return `assets/sprites/${(window.PENDING || {})[id] || id}.png`; };
 const cardName = (c) => NAMES[c.type][SPRITES[c.type][c.rank]] || '';
 
 let S; // estado de la partida
@@ -27,7 +27,7 @@ function buildDeck() {
 }
 
 function newGame() {
-  S = { deck: buildDeck(), room: [], hp: MAX_HP, maxHp: MAX_HP, torches: START_TORCHES,
+  S = { deck: buildDeck(), room: [], hp: MAX_HP, maxHp: MAX_HP, torches: 0, fledLast: false,
         weapon: null, belt: null, phoenix: false, roomNo: 0, resolved: 0, drank: false,
         over: false, kills: 0 };
   $('#log').innerHTML = '';
@@ -35,13 +35,13 @@ function newGame() {
   dealRoom(true);
 }
 
-function dealRoom(fresh) {
+function dealRoom(fresh, fled = false) {
   const kept = S.room.filter(Boolean);
   const room = kept.slice();
   while (room.length < ROOM_SIZE && S.deck.length) room.push(S.deck.shift());
   room.forEach((c) => (c.isNew = !kept.includes(c)));
   S.room = room;
-  S.roomNo++; S.resolved = 0; S.drank = false;
+  S.roomNo++; S.resolved = 0; S.drank = false; S.fledLast = fled;
   if (!fresh) log(`— Sala ${S.roomNo} —`, 'info');
   render();
 }
@@ -61,7 +61,12 @@ function askMonster(i, c) {
   const opts = [];
   if (S.weapon) {
     const dmg = Math.max(0, c.rank - S.weapon.rank);
-    opts.push({ label: `Pelear con ${cardName(S.weapon)} (${S.weapon.rank})<br>Recibes ${dmg} de daño · gasta 1 uso`, fn: () => fight(i, c, true) });
+    if (canUseWeapon(c)) {
+      const after = `luego solo servirá contra fuerza ${c.rank - 1} o menos`;
+      opts.push({ label: `Pelear con ${cardName(S.weapon)} (${S.weapon.rank})<br>Recibes ${dmg} de daño · ${after}`, fn: () => fight(i, c, true) });
+    } else {
+      opts.push({ label: `Tu ${cardName(S.weapon).toLowerCase()} ya no sirve aquí<br>Solo golpea criaturas de fuerza ${S.weapon.limit - 1} o menos`, fn: () => {}, disabled: true });
+    }
   }
   opts.push({ label: `Pelear a mano limpia<br>Recibes ${c.rank} de daño`, fn: () => fight(i, c, false), cls: 'red' });
   choose(c, `${cardName(c)} · ${c.rank} de fuerza`, opts);
@@ -71,9 +76,8 @@ function fight(i, c, withWeapon) {
   let dmg = c.rank;
   if (withWeapon && S.weapon) {
     dmg = Math.max(0, c.rank - S.weapon.rank);
-    S.weapon.uses--;
-    log(`Combates contra ${cardName(c)} (${c.rank}) con tu ${cardName(S.weapon).toLowerCase()}.`);
-    if (S.weapon.uses <= 0) { log(`¡Tu ${cardName(S.weapon).toLowerCase()} se rompe!`, 'dmg'); S.weapon = null; }
+    S.weapon.limit = c.rank;
+    log(`Combates contra ${cardName(c)} (${c.rank}) con tu ${cardName(S.weapon).toLowerCase()}. Desde ahora solo sirve contra fuerza ${c.rank - 1} o menos.`);
   } else {
     log(`Combates a mano limpia contra ${cardName(c)} (${c.rank}).`);
   }
@@ -96,7 +100,7 @@ function hurt(dmg) {
 
 function equip(i, c) {
   if (S.weapon) log(`Dejas tu ${cardName(S.weapon).toLowerCase()} (${S.weapon.rank}).`, 'info');
-  S.weapon = { ...c, uses: WEAPON_USES };
+  S.weapon = { ...c, limit: null };
   log(`Empuñas ${cardName(c).toLowerCase()} de ${c.rank}.`);
   finish(i);
 }
@@ -132,27 +136,31 @@ function useRelic(i, c) {
     S.maxHp += 4; S.hp += 4;
     log('Bebes del cáliz: +4 de vida máxima y +4 de vida.', 'gold');
   } else if (k === 'piedra') {
-    if (S.weapon) { S.weapon.rank = Math.min(14, S.weapon.rank + 1); S.weapon.uses = WEAPON_USES; log(`Afilas tu arma: ahora vale ${S.weapon.rank} y recupera todos sus usos.`, 'gold'); }
+    if (S.weapon) { S.weapon.rank = Math.min(14, S.weapon.rank + 1); S.weapon.limit = null; log(`Afilas tu arma: ahora vale ${S.weapon.rank} y vuelve a servir contra cualquier criatura.`, 'gold'); }
     else { S.hp = Math.min(S.maxHp, S.hp + 2); log('No tienes arma que afilar. Descansas: +2 de vida.', 'gold'); }
   } else if (k === 'antorcha') {
-    S.torches += 2; log('Antorcha eterna: +2 antorchas.', 'gold');
+    S.torches++; log('Antorcha eterna: podrás huir una vez aunque hayas huido de la sala anterior.', 'gold');
   }
   finish(i);
 }
 
 function flee() {
   if (!canFlee()) return;
-  S.torches--;
+  if (S.fledLast) { S.torches--; log('La antorcha eterna ilumina otra salida.', 'gold'); }
   const cards = S.room.filter(Boolean);
   for (let k = cards.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [cards[k], cards[j]] = [cards[j], cards[k]]; }
   S.deck.push(...cards);
   S.room = [];
-  log('Gastas una antorcha y huyes por un pasadizo. La sala vuelve al fondo del mazo.', 'info');
-  dealRoom();
+  log('Huyes por un pasadizo. La sala vuelve al fondo del mazo.', 'info');
+  dealRoom(false, true);
 }
 
 function canFlee() {
-  return !S.over && S.resolved === 0 && S.torches > 0 && S.deck.length > 0;
+  return !S.over && S.resolved === 0 && S.deck.length > 0 && (!S.fledLast || S.torches > 0);
+}
+
+function canUseWeapon(c) {
+  return S.weapon && (S.weapon.limit === null || c.rank < S.weapon.limit);
 }
 
 function finish(i) {
@@ -171,7 +179,7 @@ function gameOver(win) {
   render();
   let score, title, text;
   if (win) {
-    score = S.hp + S.torches * 3 + (S.belt ? S.belt.rank : 0);
+    score = S.hp + (S.belt ? S.belt.rank : 0);
     title = '¡SALISTE DE LA CRIPTA!';
     text = `Venciste a ${S.kills} monstruos y sobreviviste con ${S.hp} de vida.`;
     log('¡Has vaciado la baraja maldita!', 'gold');
@@ -202,13 +210,14 @@ function render() {
   $('#hp-text').textContent = `${Math.max(0, S.hp)}/${S.maxHp}`;
   $('#hp-bar').style.width = `${Math.max(0, S.hp) / S.maxHp * 100}%`;
   $('#torches').textContent = S.torches;
+  $('#torch-stat').hidden = S.torches === 0;
   $('#deck').textContent = S.deck.length;
   $('#room-no').textContent = S.roomNo;
 
   const w = S.weapon;
   $('#slot-weapon .slot-body').innerHTML = w
-    ? `<img src="${sprite(w)}" alt=""><div><div class="val">${w.rank}</div><div class="pips">${
-        Array.from({ length: WEAPON_USES }, (_, k) => `<span class="pip ${k < w.uses ? '' : 'off'}"></span>`).join('')}</div></div>`
+    ? `<img src="${sprite(w)}" alt=""><div><div class="val">${w.rank}</div><div class="sub">${
+        w.limit === null ? 'Sin estrenar' : w.limit <= 2 ? 'Ya no sirve' : `Golpea fuerza ≤ ${w.limit - 1}`}</div></div>`
     : '<span class="empty">A mano limpia</span>';
   const b = S.belt;
   $('#slot-belt .slot-body').innerHTML = b
@@ -227,7 +236,7 @@ function render() {
 
   const fleeBtn = $('#btn-flee');
   fleeBtn.disabled = !canFlee();
-  fleeBtn.textContent = `Huir (−1 antorcha)`;
+  fleeBtn.textContent = S.fledLast && S.torches === 0 ? 'Huir (huiste en la sala anterior)' : S.fledLast ? 'Huir (usa la antorcha eterna)' : 'Huir';
   const left = S.room.filter(Boolean).length;
   $('#hint').textContent = S.over ? '' : S.deck.length === 0
     ? `Última sala: resuelve todas las cartas (${left}).`
@@ -254,7 +263,7 @@ function closeModal() { const m = $('#modal'); if (m.open) m.close(); }
 
 function choose(c, title, opts) {
   showModal(`<div class="head"><img src="${sprite(c)}" alt=""><h2>${title}</h2></div>
-    <div class="choices">${opts.map((o, k) => `<button class="btn ${o.cls || ''}" data-k="${k}">${o.label}</button>`).join('')}
+    <div class="choices">${opts.map((o, k) => `<button class="btn ${o.cls || ''}" data-k="${k}" ${o.disabled ? 'disabled' : ''}>${o.label}</button>`).join('')}
     <button class="btn small" data-k="x">Cancelar</button></div>`);
   $('#modal-body').querySelectorAll('[data-k]').forEach((el) => (el.onclick = () => {
     if (el.dataset.k === 'x') return closeModal();
@@ -267,13 +276,13 @@ function showRules() {
   <p>La cripta es una baraja de 52 cartas. Sobrevive hasta vaciarla.</p>
   <ul>
     <li><b>♠ ♣ Monstruos</b> (2 a As = 14): te hacen tanto daño como su valor.</li>
-    <li><b>♦ Armas</b> (2–10): restan su valor al daño del monstruo. Cada arma aguanta <b>3 combates</b> y se rompe. Puedes pelear a mano limpia para no gastarla.</li>
+    <li><b>♦ Armas</b> (2–10): restan su valor al daño del monstruo. Después de usarla contra una criatura, el arma solo sirve contra criaturas <b>más débiles</b> que esa. Puedes pelear a mano limpia para no desgastarla.</li>
     <li><b>♥ Pociones</b> (2–10): curan su valor, sin pasar de tu vida máxima. Solo una cura por sala. Puedes guardar una en el <b>cinturón</b> para otra sala.</li>
-    <li><b>♥ ♦ Reliquias</b> (J, Q, K, A rojas): pluma de fénix (te revive con 5), cáliz (+4 vida máx.), piedra de afilar (+1 al arma y la repara), antorcha eterna (+2 antorchas).</li>
+    <li><b>♥ ♦ Reliquias</b> (J, Q, K, A rojas): pluma de fénix (te revive con 5 de vida), cáliz (+4 de vida máxima), piedra de afilar (+1 al arma y vuelve a servir contra todo), antorcha eterna (te deja huir dos salas seguidas una vez).</li>
   </ul>
   <p>Cada sala muestra 4 cartas. Resuelve 3; la cuarta se queda para la siguiente sala.</p>
-  <p>Antes de tocar ninguna carta puedes <b>huir</b> gastando una antorcha: las 4 cartas vuelven al fondo del mazo.</p>
-  <p><b>Puntos:</b> si ganas, tu vida + 3 por antorcha + la poción del cinturón. Si mueres, se resta la fuerza de los monstruos que quedaban.</p>
+  <p>Antes de tocar ninguna carta puedes <b>huir</b>: las 4 cartas vuelven al fondo del mazo. No puedes huir de dos salas seguidas.</p>
+  <p><b>Puntos:</b> si ganas, tu vida + la poción del cinturón. Si mueres, se resta la fuerza de los monstruos que quedaban.</p>
   <div class="choices"><button class="btn gold" id="rules-ok">¡A la cripta!</button></div></div>`);
   $('#rules-ok').onclick = closeModal;
 }

@@ -1,0 +1,110 @@
+:root {
+  --bg: #120c18; --bg2: #1d1426; --panel: #261a32; --ink: #f0ecdc; --dim: #9a8fab;
+  --red: #d2323c; --gold: #f0c850; --steel: #8fa2c0; --pink: #e66a8a; --green: #64be50;
+  --line: #3d2c4d;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body {
+  font-family: 'VT323', monospace; font-size: 20px; line-height: 1.15;
+  background: radial-gradient(ellipse at top, #2a1a38 0%, var(--bg) 60%) fixed;
+  min-height: 100vh;
+}
+img { image-rendering: pixelated; image-rendering: crisp-edges; }
+#app { max-width: 760px; margin: 0 auto; padding: 12px 16px 40px; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+h1 { font-family: 'Press Start 2P', monospace; font-size: 18px; margin: 8px 0; letter-spacing: 1px; color: var(--gold);
+     text-shadow: 3px 3px 0 #5a1830; }
+h1 span { color: var(--red); margin-left: 8px; }
+.top-btns { display: flex; gap: 6px; }
+
+.btn {
+  font-family: 'Press Start 2P', monospace; font-size: 12px; color: var(--ink); background: var(--panel);
+  border: 3px solid var(--ink); padding: 10px 14px; cursor: pointer; box-shadow: 4px 4px 0 #000;
+}
+.btn:hover:not(:disabled) { background: #3a2850; }
+.btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+.btn:disabled { opacity: .35; cursor: not-allowed; }
+.btn.small { font-size: 9px; padding: 7px 9px; border-width: 2px; }
+.btn.red { border-color: var(--red); }
+.btn.gold { border-color: var(--gold); }
+
+.hud { display: flex; gap: 8px; align-items: stretch; margin: 10px 0; flex-wrap: wrap; }
+.stat { background: var(--panel); border: 2px solid var(--line); padding: 6px 10px; display: flex; align-items: center; gap: 6px; }
+.stat.hp { flex: 1 1 220px; flex-direction: column; align-items: stretch; }
+.stat .label { font-size: 18px; color: var(--dim); }
+.stat .label b { color: var(--ink); font-weight: normal; }
+.bar { height: 14px; background: #000; border: 2px solid #000; }
+#hp-bar { height: 100%; background: linear-gradient(#ff6a6a, var(--red) 60%, #8a1a24); width: 100%; transition: width .3s steps(6); }
+.stat.mini { font-size: 22px; }
+.stat.mini img { width: 24px; height: 24px; }
+.deck-ico { width: 14px; height: 20px; background: var(--steel); border: 2px solid #000; box-shadow: 3px -3px 0 #4b5a75; display: inline-block; }
+
+.equip { display: grid; grid-template-columns: 1.4fr 1.2fr 1fr; gap: 8px; }
+.slot { background: var(--bg2); border: 2px dashed var(--line); min-height: 84px; padding: 6px; }
+.slot-label { font-size: 16px; letter-spacing: 1px; color: var(--dim); margin-bottom: 4px; }
+.slot-body { display: flex; align-items: center; gap: 8px; }
+.slot-body img { width: 48px; height: 48px; }
+.slot-body .val { font-size: 26px; }
+.slot-body .sub { font-size: 16px; color: var(--dim); }
+.pips { display: flex; gap: 3px; margin-top: 3px; }
+.pip { width: 10px; height: 10px; background: var(--steel); border: 2px solid #000; }
+.pip.off { background: #2a2233; }
+.empty { color: #5c4e6c; font-size: 18px; }
+
+.room { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 16px; }
+.card {
+  position: relative; aspect-ratio: 5 / 7; background: linear-gradient(#2d2140, #1b1326);
+  border: 3px solid var(--c, var(--ink)); box-shadow: 5px 5px 0 #000; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 6px 4px;
+  transition: transform .12s; user-select: none; color: var(--ink); font: inherit;
+}
+.card:hover { transform: translateY(-4px); }
+.card:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.card[data-type=monster] { --c: var(--red); }
+.card[data-type=weapon] { --c: var(--steel); }
+.card[data-type=potion] { --c: var(--pink); }
+.card[data-type=relic] { --c: var(--gold); }
+.card .corner { position: absolute; top: 4px; left: 6px; font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--c); text-align: center; line-height: 1.3; }
+.card .corner.br { top: auto; left: auto; bottom: 4px; right: 6px; transform: rotate(180deg); }
+.card img { width: 72%; height: auto; margin-top: 14%; filter: drop-shadow(3px 3px 0 rgba(0,0,0,.6)); }
+.card .name { font-size: 17px; text-align: center; min-height: 1em; }
+.card .fx { font-size: 16px; color: var(--c); margin-bottom: 12px; }
+.card.slot-empty { border: 3px dashed var(--line); background: transparent; box-shadow: none; cursor: default; }
+.card.slot-empty:hover { transform: none; }
+.card.enter { animation: deal .35s steps(5); }
+@keyframes deal { from { transform: translateY(-30px) rotate(-6deg); opacity: 0; } }
+
+.hint { color: var(--dim); text-align: center; min-height: 1.2em; margin: 12px 0 4px; }
+.actions { display: flex; justify-content: center; gap: 10px; }
+
+.log { margin-top: 18px; background: #0b0710; border: 2px solid var(--line); padding: 8px 10px; height: 150px; overflow-y: auto; font-size: 18px; }
+.log p { margin: 0 0 2px; }
+.log .dmg { color: #ff7a7a; } .log .heal { color: #ff9ac0; } .log .gold { color: var(--gold); } .log .info { color: var(--dim); }
+
+.shake { animation: shake .3s steps(4); }
+@keyframes shake { 25% { transform: translate(-5px, 2px); } 50% { transform: translate(5px, -2px); } 75% { transform: translate(-3px, 0); } }
+.float { position: fixed; pointer-events: none; font-family: 'Press Start 2P', monospace; font-size: 18px; z-index: 50;
+         text-shadow: 2px 2px 0 #000; animation: up 0.9s steps(8) forwards; }
+@keyframes up { to { transform: translateY(-50px); opacity: 0; } }
+
+dialog { background: var(--panel); color: var(--ink); border: 3px solid var(--ink); box-shadow: 8px 8px 0 #000; padding: 18px; max-width: min(520px, 92vw); }
+dialog::backdrop { background: rgba(8, 4, 12, .75); }
+dialog h2 { font-family: 'Press Start 2P', monospace; font-size: 14px; color: var(--gold); margin: 0 0 12px; line-height: 1.5; }
+dialog .choices { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+dialog .choices .btn { text-align: left; line-height: 1.6; }
+dialog .head { display: flex; gap: 12px; align-items: center; }
+dialog .head img { width: 64px; height: 64px; }
+dialog ul { padding-left: 20px; margin: 6px 0; } dialog li { margin-bottom: 4px; }
+.rules { max-height: 70vh; overflow-y: auto; }
+
+@media (max-width: 560px) {
+  body { font-size: 18px; }
+  h1 { font-size: 13px; }
+  .room { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .room .card { max-width: 180px; justify-self: center; width: 100%; }
+  .equip { grid-template-columns: 1fr 1fr; }
+  #slot-relic { grid-column: span 2; min-height: 0; }
+  .slot-body img { width: 40px; height: 40px; }
+}

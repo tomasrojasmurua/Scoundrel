@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naipe Maldito</title>
+<meta name="description" content="Roguelike de cartas pixel art: baja a la cripta con una baraja maldita.">
+<link rel="icon" href="assets/sprites/dragon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main id="app">
+  <header class="top">
+    <h1>NAIPE<span>MALDITO</span></h1>
+    <div class="top-btns">
+      <button id="btn-rules" class="btn small">Reglas</button>
+      <button id="btn-new" class="btn small">Nueva</button>
+    </div>
+  </header>
+
+  <section class="hud">
+    <div class="stat hp">
+      <div class="label">VIDA <b id="hp-text">20/20</b></div>
+      <div class="bar"><div id="hp-bar"></div></div>
+    </div>
+    <div class="stat mini"><img src="assets/sprites/antorcha.png" alt=""><span id="torches">3</span></div>
+    <div class="stat mini" title="Cartas en el mazo"><span class="deck-ico"></span><span id="deck">44</span></div>
+    <div class="stat mini" title="Sala actual">SALA <span id="room-no">1</span></div>
+  </section>
+
+  <section class="equip">
+    <div class="slot" id="slot-weapon"><div class="slot-label">ARMA</div><div class="slot-body"></div></div>
+    <div class="slot" id="slot-belt"><div class="slot-label">CINTURÓN</div><div class="slot-body"></div></div>
+    <div class="slot" id="slot-relic"><div class="slot-label">FÉNIX</div><div class="slot-body"></div></div>
+  </section>
+
+  <section class="room" id="room"></section>
+  <p class="hint" id="hint"></p>
+
+  <section class="actions">
+    <button id="btn-flee" class="btn">Huir</button>
+  </section>
+
+  <section class="log" id="log"></section>
+</main>
+
+<dialog id="modal"><div id="modal-body"></div></dialog>
+
+<script src="sprites.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

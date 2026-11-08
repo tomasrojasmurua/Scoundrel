@@ -48,6 +48,20 @@ def remove_background(img: Image.Image, tol: int) -> Image.Image:
         for ny, nx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
             if 0 <= ny < h and 0 <= nx < w and not mask[ny, nx] and similar[ny, nx]:
                 mask[ny, nx] = True; q.append((ny, nx))
+    # huecos de fondo encerrados (p. ej. entre la cola y una pata): manchas grandes del mismo color
+    min_area = max(30, int(h * w * 0.0015))
+    seen = mask.copy()
+    for sy, sx in zip(*np.nonzero(similar & ~seen)):
+        if seen[sy, sx]:
+            continue
+        comp = [(sy, sx)]; seen[sy, sx] = True; k = 0
+        while k < len(comp):
+            y, x = comp[k]; k += 1
+            for ny, nx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+                if 0 <= ny < h and 0 <= nx < w and not seen[ny, nx] and similar[ny, nx]:
+                    seen[ny, nx] = True; comp.append((ny, nx))
+        if len(comp) >= min_area:
+            ys, xs = zip(*comp); mask[list(ys), list(xs)] = True
     a[..., 3] = np.where(mask, 0, a[..., 3])
     return Image.fromarray(a.astype(np.uint8), 'RGBA')
 
@@ -102,8 +116,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('input')
     p.add_argument('name', help='nombre del sprite, p. ej. dragon, espada, pocion_l')
-    p.add_argument('--size', type=int, default=64, help='lado del sprite en píxeles (64 por defecto)')
-    p.add_argument('--colors', type=int, default=32, help='colores de la paleta (32 por defecto)')
+    p.add_argument('--size', type=int, default=96, help='lado del sprite en píxeles (96 por defecto)')
+    p.add_argument('--colors', type=int, default=48, help='colores de la paleta (48 por defecto)')
     p.add_argument('--tol', type=int, default=40, help='tolerancia para quitar el fondo (0-255)')
     p.add_argument('--saturation', type=float, default=1.25, help='realce de saturación antes de reducir')
     p.add_argument('--contrast', type=float, default=1.15, help='realce de contraste antes de reducir')

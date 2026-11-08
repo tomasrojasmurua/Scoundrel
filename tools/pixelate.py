@@ -22,7 +22,7 @@ from PIL import Image, ImageEnhance, ImageFilter
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def remove_background(img: Image.Image, tol: int) -> Image.Image:
+def remove_background(img: Image.Image, tol: int, holes: bool = True) -> Image.Image:
     """Hace transparente el fondo conectado a los bordes (color parecido a las esquinas)."""
     img = img.convert('RGBA')
     a = np.array(img).astype(np.int32)
@@ -51,7 +51,7 @@ def remove_background(img: Image.Image, tol: int) -> Image.Image:
     # huecos de fondo encerrados (p. ej. entre la cola y una pata): manchas grandes del mismo color
     min_area = max(30, int(h * w * 0.0015))
     seen = mask.copy()
-    for sy, sx in zip(*np.nonzero(similar & ~seen)):
+    for sy, sx in (zip(*np.nonzero(similar & ~seen)) if holes else []):
         if seen[sy, sx]:
             continue
         comp = [(sy, sx)]; seen[sy, sx] = True; k = 0
@@ -122,17 +122,20 @@ def main():
     p.add_argument('--saturation', type=float, default=1.25, help='realce de saturación antes de reducir')
     p.add_argument('--contrast', type=float, default=1.15, help='realce de contraste antes de reducir')
     p.add_argument('--sharpen', type=float, default=0.8, help='enfoque tras reducir (0 = nada)')
+    p.add_argument('--brightness', type=float, default=1.0, help='brillo (útil para criaturas muy oscuras)')
+    p.add_argument('--keep-holes', action='store_true', help='no borrar manchas interiores del color del fondo (fondos negros)')
     p.add_argument('--no-outline', action='store_true')
     args = p.parse_args()
 
     img = Image.open(args.input)
-    img = remove_background(img, args.tol)
+    img = remove_background(img, args.tol, not args.keep_holes)
     # comer 2 px del borde para quitar el halo claro del fondo
     img.putalpha(img.getchannel('A').filter(ImageFilter.MinFilter(5)))
     img = crop_square(img, 0.08)
     rgb, alpha = img.convert('RGB'), img.getchannel('A')
     rgb = ImageEnhance.Color(rgb).enhance(args.saturation)
     rgb = ImageEnhance.Contrast(rgb).enhance(args.contrast)
+    rgb = ImageEnhance.Brightness(rgb).enhance(args.brightness)
     img = Image.merge('RGBA', (*rgb.split(), alpha))
     inner = args.size if args.no_outline else args.size - 2
     small = downscale(img, inner)

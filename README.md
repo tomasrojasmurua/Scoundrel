@@ -28,3 +28,9 @@ Roguelike de cartas en pixel art para jugar en el navegador. Bajas a una cripta 
 3. Para asignar un sprite a una carta concreta, edita `sprites.js` (y `NAMES` para su nombre).
 
 Los sprites provisionales de 16x16 se generan con `python3 tools/make_placeholders.py`.
+
+Con fondo negro (o criaturas muy oscuras) conviene bajar la tolerancia y no borrar manchas interiores:
+
+```bash
+python3 tools/pixelate.py arana.png arana --tol 8 --keep-holes --brightness 1.6
+```

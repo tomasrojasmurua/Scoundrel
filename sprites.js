@@ -21,4 +21,4 @@ window.NAMES = {
 };
 
 // Sprites que todavía no tienen arte: usan otro mientras tanto.
-window.PENDING = { murcielago: 'rata', limo: 'rata', goblin: 'esqueleto', arana: 'esqueleto', zombi: 'orco', troll: 'orco' };
+window.PENDING = {};
